@@ -1,0 +1,946 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fast PDF Converter</title>
+<meta name="description" content="Free online PDF tools: merge, split, compress, rotate, convert PDF to JPG, images to PDF and more. No sign-up. Files never leave your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout concept: a quiet document-desk. Tools are index cards labelled with
+   the operation itself (A + B, PDF → JPG), red appears only where something is actionable. */
+:root{
+  --bg:#f3f4f6;
+  --surface:#ffffff;
+  --ink:#141821;
+  --muted:#586172;
+  --line:#d8dce3;
+  --accent:#d92d27;
+  --accent-ink:#ffffff;
+  --accent-soft:#fdecea;
+  --ok:#14703f;
+  --err:#b42318;
+  --err-soft:#fdeceb;
+  --display:'Space Grotesk',Inter,system-ui,sans-serif;
+  --body:Inter,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1218;--surface:#171b23;--ink:#eef0f4;--muted:#9aa4b4;--line:#2b313c;
+    --accent:#ff5d55;--accent-ink:#1b0907;--accent-soft:#2b1715;--ok:#4cc38a;--err:#ff8a80;--err-soft:#2d1816;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1218;--surface:#171b23;--ink:#eef0f4;--muted:#9aa4b4;--line:#2b313c;
+  --accent:#ff5d55;--accent-ink:#1b0907;--accent-soft:#2b1715;--ok:#4cc38a;--err:#ff8a80;--err-soft:#2d1816;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 var(--body);min-height:100vh;display:flex;flex-direction:column}
+h1,h2,h3{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0;font-weight:700;letter-spacing:-.01em}
+p{margin:0}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}
+.wrap{width:100%;max-width:1080px;margin:0 auto;padding-inline:20px}
+
+/* header */
+.top{border-bottom:1px solid var(--line);background:var(--surface)}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px 24px;flex-wrap:wrap;padding-block:14px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font:700 20px/1 var(--display)}
+.mark{width:24px;height:30px;background:var(--accent);clip-path:polygon(0 0,70% 0,100% 28%,100% 100%,0 100%);display:inline-block}
+.top nav{display:flex;gap:20px;flex-wrap:wrap}
+.top nav a{text-decoration:none;color:var(--muted);font-size:15px;font-weight:500}
+.top nav a:hover{color:var(--ink);text-decoration:underline}
+main{flex:1;padding-block:40px 64px}
+
+/* home */
+.hero{max-width:720px;margin-bottom:40px}
+.hero h1{font-size:clamp(32px,5.5vw,52px)}
+.hero p{margin-top:14px;color:var(--muted);font-size:18px;max-width:56ch}
+.facts{display:flex;flex-wrap:wrap;gap:8px 22px;margin:22px 0 0;padding:0;list-style:none;font:500 13px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em}
+.facts li::before{content:"";display:inline-block;width:8px;height:8px;background:var(--accent);margin-right:8px;vertical-align:0}
+.group+.group{margin-top:36px}
+.group h2{font-size:15px;font-family:var(--mono);font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.group h2::after{content:"";flex:1;height:1px;background:var(--line)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.card{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px 18px;text-decoration:none;min-width:0}
+.card:hover{border-color:var(--accent)}
+.card .tag{font:500 12px/1 var(--mono);color:var(--accent);letter-spacing:.04em}
+.card h3{font-size:19px}
+.card p{font-size:14px;color:var(--muted)}
+
+/* tool view */
+.back{display:inline-block;margin-bottom:18px;color:var(--muted);text-decoration:none;font-weight:500;font-size:15px}
+.back:hover{color:var(--ink);text-decoration:underline}
+.tool h1{font-size:clamp(28px,4.5vw,40px)}
+.tool .lead{margin-top:10px;color:var(--muted);max-width:62ch}
+.panel{margin-top:26px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:20px;min-width:0}
+.drop{border:2px dashed var(--line);border-radius:10px;padding:30px 16px;text-align:center;cursor:pointer;display:flex;flex-direction:column;gap:4px;align-items:center}
+.drop strong{font:600 18px/1.3 var(--display)}
+.drop span{color:var(--muted);font-size:14px}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.files{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.file{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+.file .n{font:500 12px/1 var(--mono);color:var(--muted);min-width:1.6em}
+.file .name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.file .size{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.icon-btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:6px;width:32px;height:32px;cursor:pointer;font:600 15px/1 var(--body)}
+.icon-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.icon-btn:disabled{opacity:.35;cursor:default}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label{font-weight:600;font-size:14px}
+.field .hint{font-size:13px;color:var(--muted)}
+.field input[type=text],.field input[type=number],.field select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;min-width:0}
+.field.check{flex-direction:row;align-items:center;gap:10px}
+.field.check input{width:18px;height:18px;accent-color:var(--accent)}
+.btn{font:600 16px/1 var(--body);background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:14px 22px;cursor:pointer;align-self:flex-start}
+.btn:hover:not(:disabled){filter:brightness(.93)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.ghost:hover:not(:disabled){border-color:var(--accent);color:var(--accent);filter:none}
+.btn.small{padding:9px 14px;font-size:14px}
+.progress{display:flex;flex-direction:column;gap:6px}
+.track{height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.fill{height:100%;width:0;background:var(--accent);transition:width .15s}
+.progress .msg{font-size:14px;color:var(--muted)}
+.notice{border-radius:8px;padding:12px 14px;font-size:15px}
+.notice.err{background:var(--err-soft);color:var(--err);border:1px solid var(--err)}
+.notice.info{background:var(--bg);border:1px solid var(--line);color:var(--muted)}
+.results{display:flex;flex-direction:column;gap:10px}
+.results h2{font-size:20px;color:var(--ok)}
+.out{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-width:0}
+.out .name{flex:1;min-width:0;overflow-wrap:anywhere;font-weight:500}
+.out .size{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fine{font-size:13px;color:var(--muted)}
+
+/* text pages */
+.doc{max-width:720px}
+.doc h1{font-size:clamp(30px,5vw,44px);margin-bottom:6px}
+.doc .date{color:var(--muted);font-size:14px;margin-bottom:28px}
+.doc h2{font-size:22px;margin:30px 0 8px}
+.doc p,.doc li{color:var(--ink)}
+.doc p+p{margin-top:12px}
+.doc ul{padding-left:22px;margin:10px 0 0}
+.doc li+li{margin-top:6px}
+.doc .note{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:14px 16px;margin:20px 0}
+
+footer{border-top:1px solid var(--line);background:var(--surface);padding-block:24px;font-size:14px;color:var(--muted)}
+footer .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 24px}
+footer nav{display:flex;gap:18px;flex-wrap:wrap}
+footer a{text-decoration:none}
+footer a:hover{text-decoration:underline;color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:520px){.out,.file{flex-wrap:wrap}.file .size{display:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap bar">
+    <a class="brand" href="#"><span class="mark" aria-hidden="true"></span><span>Fast PDF Converter</span></a>
+    <nav aria-label="Main">
+      <a href="#">All tools</a>
+      <a href="#privacy">Privacy Policy</a>
+      <a href="#terms">Terms</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" id="app">
+  <noscript><p class="notice err">Fast PDF Converter needs JavaScript. Please turn it on in your browser.</p></noscript>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>&copy; <span id="year"></span> Fast PDF Converter. Your files stay on your device.</span>
+    <nav aria-label="Footer">
+      <a href="#privacy">Privacy Policy</a>
+      <a href="#terms">Terms of Use</a>
+      <a href="#contact">Contact</a>
+    </nav>
+  </div>
+</footer>
+
+<!-- ============ Static pages ============ -->
+<template id="tpl-privacy">
+  <article class="doc">
+    <h1>Privacy Policy</h1>
+    <p class="date">Last updated: November 23, 2026</p>
+
+    <p>Fast PDF Converter ("we", "the site") is built so that your documents never reach us. This policy explains what that means and what little information is involved when you use the site.</p>
+
+    <h2>Your files stay on your device</h2>
+    <p>Every tool on this site runs inside your own browser. When you choose a PDF or image, it is read into your device's memory, processed there, and the result is created on your device. We do not upload, copy, store, view or share your files. Closing or reloading the page clears them.</p>
+
+    <h2>Information we collect</h2>
+    <p>We do not ask you to create an account, and we do not collect your name, email address or the contents of your files. Like most websites, the company that hosts this site may keep standard server logs (for example IP address, browser type, pages requested and time of visit). These logs are used to keep the site running and secure.</p>
+
+    <h2>Third-party services</h2>
+    <p>To work, the site loads some resources from other providers:</p>
+    <ul>
+      <li>Google Fonts, to display text in the site's typefaces.</li>
+      <li>cdnjs (operated by Cloudflare), to load the open-source libraries that do the PDF work: pdf-lib, PDF.js and JSZip.</li>
+    </ul>
+    <p>When your browser requests these resources, those providers can see technical information such as your IP address and browser type, under their own privacy policies. They do not receive your files.</p>
+
+    <h2>Cookies, analytics and advertising</h2>
+    <p>The site itself does not set cookies to track you.</p>
+    <p>We may show advertisements from third-party networks such as Google AdSense, or use an analytics service, to cover the cost of keeping the tools free. These providers may use cookies or similar technology to show ads and measure traffic. You can manage or turn off personalised ads in your Google Ad settings, and you can block or delete cookies in your browser settings.</p>
+
+    <h2>Children</h2>
+    <p>The site is a general-purpose tool and is not directed at children under 13. We do not knowingly collect personal information from children.</p>
+
+    <h2>Your choices</h2>
+    <p>Because we do not hold your files or an account about you, there is nothing for us to delete on your behalf. If you have a question about your data or about this policy, write to us at the address below.</p>
+
+    <h2>Changes to this policy</h2>
+    <p>If we change this policy, we will update the date at the top of this page.</p>
+
+    <h2>Contact</h2>
+    <p>Email: <span class="js-email"></span></p>
+  </article>
+</template>
+
+<template id="tpl-terms">
+  <article class="doc">
+    <h1>Terms of Use</h1>
+    <p class="date">Last updated: November 23, 2026</p>
+
+    <p>By using Fast PDF Converter you agree to these terms. If you do not agree, please do not use the site.</p>
+
+    <h2>The service</h2>
+    <p>Fast PDF Converter offers free tools to work with PDF files, such as merging, splitting, rotating, compressing and converting. The tools run in your browser. We may add, change or remove tools at any time.</p>
+
+    <h2>Your files</h2>
+    <p>You keep all rights to your files. You are responsible for having the right to use and modify any file you process. Do not use the site on files you are not allowed to handle, or for anything unlawful.</p>
+
+    <h2>Check your results</h2>
+    <p>Conversion results can differ from the original, especially for complex layouts, fonts and scanned pages. Always keep a copy of your original file and review the output before you rely on it.</p>
+
+    <h2>No warranty</h2>
+    <p>The site is provided "as is" and "as available", without warranties of any kind. We do not promise that it will be uninterrupted, error-free or suitable for a particular purpose. Large files may fail if your device runs out of memory.</p>
+
+    <h2>Limit of liability</h2>
+    <p>To the extent allowed by law, we are not liable for any loss or damage that results from using the site, including lost or damaged files.</p>
+
+    <h2>Open-source software</h2>
+    <p>The site uses open-source libraries (pdf-lib, PDF.js and JSZip), which are provided under their own licences.</p>
+
+    <h2>Changes</h2>
+    <p>We may update these terms. The date at the top shows when they last changed. Continuing to use the site after a change means you accept the new terms.</p>
+
+    <h2>Contact</h2>
+    <p>Email: <span class="js-email"></span></p>
+  </article>
+</template>
+
+<template id="tpl-contact">
+  <article class="doc">
+    <h1>Contact</h1>
+    <p class="date">Questions, bug reports and tool requests are welcome.</p>
+    <p>Email us at <span class="js-email"></span>.</p>
+    <p>If something did not convert correctly, tell us which tool you used and roughly what the file contains. Please do not email confidential documents.</p>
+  </article>
+</template>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ---- Change these two values for your own site ---- */
+  var SITE = { name: 'Fast PDF Converter', email: 'your-email@example.com' };
+
+  var app = document.getElementById('app');
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  /* ---------- small helpers ---------- */
+  function h(tag, props) {
+    var e = document.createElement(tag);
+    props = props || {};
+    Object.keys(props).forEach(function (k) {
+      var v = props[k];
+      if (k === 'class') e.className = v;
+      else if (k.indexOf('on') === 0) e.addEventListener(k.slice(2), v);
+      else if (v === true) e.setAttribute(k, '');
+      else if (v !== false && v != null) e.setAttribute(k, v);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var kids = [].concat(arguments[i]);
+      kids.forEach(function (c) {
+        if (c == null || c === false) return;
+        e.append(c.nodeType ? c : document.createTextNode(String(c)));
+      });
+    }
+    return e;
+  }
+  function fmtSize(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+    return (b / 1048576).toFixed(2) + ' MB';
+  }
+  function esc(s) {
+    return s.replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function baseName(f) { return f.name.replace(/\.[^.]+$/, ''); }
+  function tick() { return new Promise(function (r) { setTimeout(r, 0); }); }
+  function need() {
+    var map = { pdflib: window.PDFLib, pdfjs: window.pdfjsLib, jszip: window.JSZip };
+    for (var i = 0; i < arguments.length; i++) {
+      if (!map[arguments[i]]) {
+        throw new Error('A required library did not load. Check your internet connection and reload the page.');
+      }
+    }
+  }
+  function download(blob, name) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 15000);
+  }
+  function toBlob(canvas, type, q) {
+    return new Promise(function (res, rej) {
+      canvas.toBlob(function (b) {
+        b ? res(b) : rej(new Error('Could not create the image. The page may be too large for this device.'));
+      }, type, q);
+    });
+  }
+
+  /* ---------- PDF helpers ---------- */
+  async function openPdfLib(file) {
+    need('pdflib');
+    var buf = await file.arrayBuffer();
+    try {
+      return await PDFLib.PDFDocument.load(buf);
+    } catch (e) {
+      if (/encrypt/i.test(e.message || '')) {
+        throw new Error('"' + file.name + '" is password protected. Remove the password first, then try again.');
+      }
+      throw new Error('"' + file.name + '" could not be read. The file may be damaged.');
+    }
+  }
+  async function openPdfJs(file) {
+    need('pdfjs');
+    var data = new Uint8Array(await file.arrayBuffer());
+    try {
+      return await pdfjsLib.getDocument({ data: data }).promise;
+    } catch (e) {
+      if (e && e.name === 'PasswordException') {
+        throw new Error('"' + file.name + '" is password protected. Remove the password first, then try again.');
+      }
+      throw new Error('"' + file.name + '" could not be read. The file may be damaged.');
+    }
+  }
+  async function savePdf(doc) {
+    return new Blob([await doc.save()], { type: 'application/pdf' });
+  }
+  function parseRanges(str, total) {
+    var parts = String(str || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    if (!parts.length) throw new Error('Enter page numbers, for example 1-3, 5, 8-');
+    var out = [];
+    parts.forEach(function (p) {
+      var a, b, m;
+      if (/^\d+$/.test(p)) { a = b = +p; }
+      else if ((m = p.match(/^(\d*)\s*-\s*(\d*)$/)) && (m[1] || m[2])) {
+        a = m[1] ? +m[1] : 1;
+        b = m[2] ? +m[2] : total;
+      } else {
+        throw new Error('"' + p + '" is not a valid page range. Use numbers like 1-3, 5, 8-');
+      }
+      if (a < 1 || b > total || a > b) {
+        throw new Error('"' + p + '" does not fit this PDF, which has ' + total + ' page' + (total === 1 ? '' : 's') + '.');
+      }
+      for (var i = a; i <= b; i++) out.push(i - 1);
+    });
+    return out;
+  }
+  async function renderPage(pdf, n, scale) {
+    var page = await pdf.getPage(n);
+    var base = page.getViewport({ scale: 1 });
+    var longest = Math.max(base.width, base.height) * scale;
+    var s = longest > 8000 ? scale * 8000 / longest : scale;
+    var vp = page.getViewport({ scale: s });
+    var c = document.createElement('canvas');
+    c.width = Math.ceil(vp.width);
+    c.height = Math.ceil(vp.height);
+    var ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, c.width, c.height);
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    page.cleanup();
+    return c;
+  }
+  async function pageLines(page) {
+    var tc = await page.getTextContent();
+    var lines = [], cur = '', curY = null;
+    function push() {
+      if (cur.trim()) lines.push({ text: cur.replace(/\s+/g, ' ').trim(), y: curY });
+      cur = ''; curY = null;
+    }
+    tc.items.forEach(function (it) {
+      if (!('str' in it)) return;
+      var y = it.transform[5];
+      if (curY !== null && Math.abs(y - curY) > 3) push();
+      if (curY === null) curY = y;
+      cur += it.str;
+      if (it.hasEOL) push();
+    });
+    push();
+    return lines;
+  }
+  function toParagraphs(lines) {
+    if (!lines.length) return [];
+    var gaps = [];
+    for (var i = 1; i < lines.length; i++) {
+      var g = lines[i - 1].y - lines[i].y;
+      if (g > 0) gaps.push(g);
+    }
+    gaps.sort(function (a, b) { return a - b; });
+    var med = gaps.length ? gaps[Math.floor(gaps.length / 2)] : 0;
+    var paras = [], cur = lines[0].text;
+    for (var j = 1; j < lines.length; j++) {
+      var gap = lines[j - 1].y - lines[j].y;
+      if (gap <= 0 || (med && gap > med * 1.5)) { paras.push(cur); cur = lines[j].text; }
+      else cur += ' ' + lines[j].text;
+    }
+    paras.push(cur);
+    return paras;
+  }
+  async function extractAllLines(file, progress) {
+    var pdf = await openPdfJs(file);
+    var pages = [];
+    var chars = 0;
+    for (var i = 1; i <= pdf.numPages; i++) {
+      await progress((i - 1) / pdf.numPages, 'Reading page ' + i + ' of ' + pdf.numPages);
+      var lines = await pageLines(await pdf.getPage(i));
+      lines.forEach(function (l) { chars += l.text.length; });
+      pages.push(lines);
+    }
+    if (chars < 10) {
+      throw new Error('No text was found. This looks like a scanned PDF (pictures of pages), which needs OCR to read.');
+    }
+    return pages;
+  }
+  async function embedImage(doc, file) {
+    var buf = await file.arrayBuffer();
+    var isJpg = file.type === 'image/jpeg' || /\.jpe?g$/i.test(file.name);
+    var isPng = file.type === 'image/png' || /\.png$/i.test(file.name);
+    if (isJpg) return doc.embedJpg(buf);
+    if (isPng) return doc.embedPng(buf);
+    var bmp;
+    try { bmp = await createImageBitmap(file); }
+    catch (e) { throw new Error('"' + file.name + '" is not an image format this browser can open.'); }
+    var c = document.createElement('canvas');
+    c.width = bmp.width; c.height = bmp.height;
+    var ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.drawImage(bmp, 0, 0);
+    var png = await toBlob(c, 'image/png');
+    return doc.embedPng(await png.arrayBuffer());
+  }
+  function latin(s) { return s.replace(/\t/g, '    ').replace(/[^\x20-\x7E\xA0-\xFF]/g, '?'); }
+
+  /* ---------- tool definitions ---------- */
+  var ROT = [['90', '90° clockwise'], ['180', '180°'], ['270', '90° counter-clockwise']];
+
+  var TOOLS = [
+    {
+      id: 'merge', group: 'Organize', tag: 'A + B', name: 'Merge PDF',
+      desc: 'Combine several PDFs into one file, in the order you choose.',
+      kind: 'pdf', multiple: true, min: 2, ordered: true, options: [],
+      run: async function (c) {
+        need('pdflib');
+        var out = await PDFLib.PDFDocument.create();
+        for (var i = 0; i < c.files.length; i++) {
+          await c.progress(i / c.files.length, 'Adding ' + c.files[i].name);
+          var src = await openPdfLib(c.files[i]);
+          var pages = await out.copyPages(src, src.getPageIndices());
+          pages.forEach(function (p) { out.addPage(p); });
+        }
+        return { outputs: [{ name: 'merged.pdf', blob: await savePdf(out) }] };
+      }
+    },
+    {
+      id: 'split', group: 'Organize', tag: '1 | 2 | 3', name: 'Split PDF',
+      desc: 'Cut a PDF into separate files, one per page or every few pages.',
+      kind: 'pdf', multiple: false, min: 1,
+      options: [{ id: 'every', label: 'Pages per file', type: 'number', value: 1, min: 1, hint: '1 gives one file for every page.' }],
+      run: async function (c) {
+        var f = c.files[0], n = Math.max(1, Math.floor(c.opts.every) || 1);
+        var src = await openPdfLib(f), total = src.getPageCount(), outs = [];
+        var parts = Math.ceil(total / n);
+        for (var p = 0; p < parts; p++) {
+          await c.progress(p / parts, 'Creating file ' + (p + 1) + ' of ' + parts);
+          var doc = await PDFLib.PDFDocument.create();
+          var idx = [];
+          for (var i = p * n; i < Math.min(total, (p + 1) * n); i++) idx.push(i);
+          (await doc.copyPages(src, idx)).forEach(function (pg) { doc.addPage(pg); });
+          outs.push({ name: baseName(f) + '_part' + (p + 1) + '.pdf', blob: await savePdf(doc) });
+        }
+        return { outputs: outs };
+      }
+    },
+    {
+      id: 'extract-pages', group: 'Organize', tag: 'p.3–5', name: 'Extract Pages',
+      desc: 'Pull selected pages out of a PDF into a new file.',
+      kind: 'pdf', multiple: false, min: 1,
+      options: [{ id: 'pages', label: 'Pages to keep', type: 'text', value: '1-3', hint: 'Example: 1-3, 5, 8-' }],
+      run: async function (c) {
+        var f = c.files[0], src = await openPdfLib(f);
+        var idx = parseRanges(c.opts.pages, src.getPageCount());
+        var doc = await PDFLib.PDFDocument.create();
+        (await doc.copyPages(src, idx)).forEach(function (p) { doc.addPage(p); });
+        return { outputs: [{ name: baseName(f) + '_extracted.pdf', blob: await savePdf(doc) }] };
+      }
+    },
+    {
+      id: 'remove-pages', group: 'Organize', tag: '– p.2', name: 'Remove Pages',
+      desc: 'Delete pages you do not need and keep the rest.',
+      kind: 'pdf', multiple: false, min: 1,
+      options: [{ id: 'pages', label: 'Pages to remove', type: 'text', value: '2', hint: 'Example: 2, 4-6' }],
+      run: async function (c) {
+        var f = c.files[0], src = await openPdfLib(f), total = src.getPageCount();
+        var drop = {};
+        parseRanges(c.opts.pages, total).forEach(function (i) { drop[i] = true; });
+        var keep = [];
+        for (var i = 0; i < total; i++) if (!drop[i]) keep.push(i);
+        if (!keep.length) throw new Error('That would remove every page. Keep at least one.');
+        var doc = await PDFLib.PDFDocument.create();
+        (await doc.copyPages(src, keep)).forEach(function (p) { doc.addPage(p); });
+        return { outputs: [{ name: baseName(f) + '_trimmed.pdf', blob: await savePdf(doc) }] };
+      }
+    },
+    {
+      id: 'rotate', group: 'Organize', tag: '↻ 90°', name: 'Rotate PDF',
+      desc: 'Turn all pages, or only the ones you pick, to the right way up.',
+      kind: 'pdf', multiple: false, min: 1,
+      options: [
+        { id: 'angle', label: 'Rotate', type: 'select', choices: ROT, value: '90' },
+        { id: 'pages', label: 'Pages (optional)', type: 'text', value: '', hint: 'Leave empty to rotate every page.' }
+      ],
+      run: async function (c) {
+        var f = c.files[0], doc = await openPdfLib(f), total = doc.getPageCount();
+        var idx = String(c.opts.pages || '').trim() ? parseRanges(c.opts.pages, total) : doc.getPageIndices();
+        var add = +c.opts.angle;
+        idx.forEach(function (i) {
+          var pg = doc.getPage(i);
+          pg.setRotation(PDFLib.degrees((pg.getRotation().angle + add) % 360));
+        });
+        return { outputs: [{ name: baseName(f) + '_rotated.pdf', blob: await savePdf(doc) }] };
+      }
+    },
+    {
+      id: 'images-to-pdf', group: 'Convert to PDF', tag: 'JPG → PDF', name: 'Images to PDF',
+      desc: 'Turn JPG, PNG and WebP pictures into one PDF, one picture per page.',
+      kind: 'image', multiple: true, min: 1, ordered: true,
+      options: [
+        { id: 'size', label: 'Page size', type: 'select', value: 'fit', choices: [['fit', 'Same size as the image'], ['a4', 'A4 page']] },
+        { id: 'margin', label: 'Margin (A4 only)', type: 'select', value: '24', choices: [['0', 'None'], ['24', 'Small'], ['48', 'Large']] }
+      ],
+      run: async function (c) {
+        need('pdflib');
+        var doc = await PDFLib.PDFDocument.create();
+        for (var i = 0; i < c.files.length; i++) {
+          await c.progress(i / c.files.length, 'Adding ' + c.files[i].name);
+          var img = await embedImage(doc, c.files[i]);
+          if (c.opts.size === 'fit') {
+            var w = img.width * 0.75, hh = img.height * 0.75;
+            doc.addPage([w, hh]).drawImage(img, { x: 0, y: 0, width: w, height: hh });
+          } else {
+            var landscape = img.width > img.height;
+            var W = landscape ? 841.89 : 595.28, H = landscape ? 595.28 : 841.89;
+            var m = +c.opts.margin;
+            var k = Math.min((W - 2 * m) / img.width, (H - 2 * m) / img.height);
+            var dw = img.width * k, dh = img.height * k;
+            doc.addPage([W, H]).drawImage(img, { x: (W - dw) / 2, y: (H - dh) / 2, width: dw, height: dh });
+          }
+        }
+        return { outputs: [{ name: 'images.pdf', blob: await savePdf(doc) }] };
+      }
+    },
+    {
+      id: 'text-to-pdf', group: 'Convert to PDF', tag: 'TXT → PDF', name: 'Text to PDF',
+      desc: 'Turn a plain .txt file into a clean A4 PDF. English and Latin letters only.',
+      kind: 'text', multiple: false, min: 1, options: [],
+      run: async function (c) {
+        need('pdflib');
+        var f = c.files[0], text = await f.text();
+        var doc = await PDFLib.PDFDocument.create();
+        var font = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+        var size = 11, lh = 15, M = 56, W = 595.28, H = 841.89, maxW = W - 2 * M;
+        var page = doc.addPage([W, H]), y = H - M;
+        function flush(s) {
+          if (y < M) { page = doc.addPage([W, H]); y = H - M; }
+          if (s) page.drawText(s, { x: M, y: y - size, size: size, font: font });
+          y -= lh;
+        }
+        var lines = text.split(/\r?\n/);
+        for (var li = 0; li < lines.length; li++) {
+          var line = latin(lines[li]);
+          if (!line.trim()) { flush(''); continue; }
+          var words = line.split(' '), cur = '';
+          for (var wi = 0; wi < words.length; wi++) {
+            var w = words[wi];
+            while (font.widthOfTextAtSize(w, size) > maxW) {
+              var cut = w.length - 1;
+              while (cut > 1 && font.widthOfTextAtSize(w.slice(0, cut), size) > maxW) cut--;
+              if (cur) { flush(cur); cur = ''; }
+              flush(w.slice(0, cut));
+              w = w.slice(cut);
+            }
+            var t = cur ? cur + ' ' + w : w;
+            if (cur && font.widthOfTextAtSize(t, size) > maxW) { flush(cur); cur = w; }
+            else cur = t;
+          }
+          flush(cur);
+        }
+        return { outputs: [{ name: baseName(f) + '.pdf', blob: await savePdf(doc) }] };
+      }
+    },
+    {
+      id: 'pdf-to-images', group: 'Convert from PDF', tag: 'PDF → JPG', name: 'PDF to Images',
+      desc: 'Save every page of a PDF as a JPG or PNG picture.',
+      kind: 'pdf', multiple: false, min: 1,
+      options: [
+        { id: 'format', label: 'Format', type: 'select', value: 'jpg', choices: [['jpg', 'JPG (smaller)'], ['png', 'PNG (sharper)']] },
+        { id: 'quality', label: 'Quality', type: 'select', value: '2', choices: [['1.5', 'Standard'], ['2', 'High'], ['3', 'Maximum']] }
+      ],
+      run: async function (c) {
+        var f = c.files[0], pdf = await openPdfJs(f), outs = [];
+        var png = c.opts.format === 'png';
+        for (var i = 1; i <= pdf.numPages; i++) {
+          await c.progress((i - 1) / pdf.numPages, 'Page ' + i + ' of ' + pdf.numPages);
+          var canvas = await renderPage(pdf, i, +c.opts.quality);
+          var blob = await toBlob(canvas, png ? 'image/png' : 'image/jpeg', 0.92);
+          canvas.width = canvas.height = 0;
+          outs.push({ name: baseName(f) + '_page' + i + (png ? '.png' : '.jpg'), blob: blob });
+        }
+        return { outputs: outs };
+      }
+    },
+    {
+      id: 'pdf-to-text', group: 'Convert from PDF', tag: 'PDF → TXT', name: 'PDF to Text',
+      desc: 'Copy out all the text from a PDF into a .txt file.',
+      kind: 'pdf', multiple: false, min: 1, options: [],
+      run: async function (c) {
+        var f = c.files[0];
+        var pages = await extractAllLines(f, c.progress);
+        var text = pages.map(function (lines) {
+          return lines.map(function (l) { return l.text; }).join('\n');
+        }).join('\n\n');
+        return { outputs: [{ name: baseName(f) + '.txt', blob: new Blob([text], { type: 'text/plain;charset=utf-8' }) }] };
+      }
+    },
+    {
+      id: 'pdf-to-word', group: 'Convert from PDF', tag: 'PDF → DOC', name: 'PDF to Word (text)',
+      desc: 'Get the text of a PDF as a Word-compatible file you can edit. Pictures and exact layout are not kept.',
+      kind: 'pdf', multiple: false, min: 1, options: [],
+      run: async function (c) {
+        var f = c.files[0];
+        var pages = await extractAllLines(f, c.progress);
+        var body = pages.map(function (lines, i) {
+          var paras = toParagraphs(lines).map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('');
+          return paras + (i < pages.length - 1 ? '<br clear="all" style="page-break-before:always">' : '');
+        }).join('');
+        var html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>' +
+          esc(baseName(f)) + '</title></head><body>' + body + '</body></html>';
+        return {
+          outputs: [{ name: baseName(f) + '.doc', blob: new Blob(['﻿', html], { type: 'application/msword' }) }],
+          note: 'This keeps the text only. Tables, pictures and the original page design are not carried over.'
+        };
+      }
+    },
+    {
+      id: 'compress', group: 'Edit and optimize', tag: '↓ size', name: 'Compress PDF',
+      desc: 'Make a PDF smaller by re-saving each page as a compressed picture.',
+      kind: 'pdf', multiple: false, min: 1,
+      options: [{ id: 'level', label: 'Compression', type: 'select', value: 'balanced',
+        choices: [['strong', 'Strong (smallest file)'], ['balanced', 'Balanced'], ['light', 'Light (best quality)']],
+        hint: 'Pages become pictures, so text can no longer be selected or searched.' }],
+      run: async function (c) {
+        need('pdflib', 'pdfjs');
+        var f = c.files[0];
+        var q = { strong: [1.0, 0.5], balanced: [1.4, 0.7], light: [2.0, 0.85] }[c.opts.level];
+        var pdf = await openPdfJs(f);
+        var out = await PDFLib.PDFDocument.create();
+        for (var i = 1; i <= pdf.numPages; i++) {
+          await c.progress((i - 1) / pdf.numPages, 'Compressing page ' + i + ' of ' + pdf.numPages);
+          var pg = await pdf.getPage(i);
+          var vp = pg.getViewport({ scale: 1 });
+          var canvas = await renderPage(pdf, i, q[0]);
+          var jpg = await toBlob(canvas, 'image/jpeg', q[1]);
+          canvas.width = canvas.height = 0;
+          var img = await out.embedJpg(await jpg.arrayBuffer());
+          out.addPage([vp.width, vp.height]).drawImage(img, { x: 0, y: 0, width: vp.width, height: vp.height });
+        }
+        var blob = await savePdf(out);
+        var note = 'Size: ' + fmtSize(f.size) + ' → ' + fmtSize(blob.size) + '.';
+        if (blob.size >= f.size) note += ' This file is already well compressed, so the result is not smaller. Keep your original.';
+        return { outputs: [{ name: baseName(f) + '_compressed.pdf', blob: blob }], note: note };
+      }
+    },
+    {
+      id: 'page-numbers', group: 'Edit and optimize', tag: '1 2 3', name: 'Add Page Numbers',
+      desc: 'Stamp a page number on every page of a PDF.',
+      kind: 'pdf', multiple: false, min: 1,
+      options: [
+        { id: 'position', label: 'Position', type: 'select', value: 'bc', choices: [['bc', 'Bottom center'], ['br', 'Bottom right'], ['bl', 'Bottom left'], ['tc', 'Top center'], ['tr', 'Top right'], ['tl', 'Top left']] },
+        { id: 'format', label: 'Style', type: 'select', value: 'n', choices: [['n', '1'], ['page', 'Page 1'], ['pageof', 'Page 1 of 10'], ['slash', '1 / 10']] },
+        { id: 'start', label: 'Start at number', type: 'number', value: 1, min: 0 },
+        { id: 'skip', label: 'Skip the first page (cover)', type: 'checkbox', value: false }
+      ],
+      run: async function (c) {
+        var f = c.files[0], doc = await openPdfLib(f);
+        var font = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+        var pages = doc.getPages(), size = 10, M = 36;
+        var start = Math.floor(+c.opts.start) || 0, last = start + pages.length - 1;
+        pages.forEach(function (pg, i) {
+          if (c.opts.skip && i === 0) return;
+          var n = start + i, t;
+          if (c.opts.format === 'page') t = 'Page ' + n;
+          else if (c.opts.format === 'pageof') t = 'Page ' + n + ' of ' + last;
+          else if (c.opts.format === 'slash') t = n + ' / ' + last;
+          else t = String(n);
+          var sz = pg.getSize(), w = font.widthOfTextAtSize(t, size);
+          var p = c.opts.position, x, y;
+          x = p[1] === 'l' ? M : p[1] === 'r' ? sz.width - M - w : (sz.width - w) / 2;
+          y = p[0] === 'b' ? 24 : sz.height - 24 - size;
+          pg.drawText(t, { x: x, y: y, size: size, font: font, color: PDFLib.rgb(0.2, 0.2, 0.2) });
+        });
+        return { outputs: [{ name: baseName(f) + '_numbered.pdf', blob: await savePdf(doc) }] };
+      }
+    },
+    {
+      id: 'watermark', group: 'Edit and optimize', tag: 'ABC', name: 'Add Watermark',
+      desc: 'Place a text watermark such as CONFIDENTIAL across every page.',
+      kind: 'pdf', multiple: false, min: 1,
+      options: [
+        { id: 'text', label: 'Watermark text', type: 'text', value: 'CONFIDENTIAL', hint: 'English letters and numbers only.' },
+        { id: 'size', label: 'Size', type: 'select', value: '64', choices: [['40', 'Small'], ['64', 'Medium'], ['96', 'Large']] },
+        { id: 'opacity', label: 'Strength', type: 'select', value: '0.25', choices: [['0.12', 'Light'], ['0.25', 'Medium'], ['0.5', 'Strong']] },
+        { id: 'angle', label: 'Direction', type: 'select', value: '45', choices: [['45', 'Diagonal'], ['0', 'Straight']] }
+      ],
+      run: async function (c) {
+        var f = c.files[0], doc = await openPdfLib(f);
+        var text = String(c.opts.text || '').trim();
+        if (!text) throw new Error('Type the watermark text first.');
+        var font = await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+        var size = +c.opts.size, theta = (+c.opts.angle) * Math.PI / 180, w;
+        try { w = font.widthOfTextAtSize(text, size); }
+        catch (e) { throw new Error('The watermark can use English letters, numbers and common symbols only.'); }
+        doc.getPages().forEach(function (pg) {
+          var s = pg.getSize(), cx = s.width / 2, cy = s.height / 2;
+          var a = w / 2, b = size / 3;
+          var x = cx - (a * Math.cos(theta) - b * Math.sin(theta));
+          var y = cy - (a * Math.sin(theta) + b * Math.cos(theta));
+          pg.drawText(text, { x: x, y: y, size: size, font: font, color: PDFLib.rgb(0.5, 0.5, 0.5), opacity: +c.opts.opacity, rotate: PDFLib.degrees(+c.opts.angle) });
+        });
+        return { outputs: [{ name: baseName(f) + '_watermarked.pdf', blob: await savePdf(doc) }] };
+      }
+    }
+  ];
+  var GROUPS = ['Organize', 'Convert to PDF', 'Convert from PDF', 'Edit and optimize'];
+  var KIND = {
+    pdf: { accept: '.pdf,application/pdf', label: 'PDF', test: function (f) { return f.type === 'application/pdf' || /\.pdf$/i.test(f.name); } },
+    image: { accept: 'image/*', label: 'image', test: function (f) { return /^image\//.test(f.type) || /\.(jpe?g|png|webp|gif|bmp)$/i.test(f.name); } },
+    text: { accept: '.txt,text/plain', label: 'text (.txt)', test: function (f) { return f.type === 'text/plain' || /\.txt$/i.test(f.name); } }
+  };
+
+  /* ---------- views ---------- */
+  function showHome() {
+    document.title = SITE.name;
+    var root = h('div', {},
+      h('section', { class: 'hero' },
+        h('h1', {}, 'Free PDF tools that run in your browser'),
+        h('p', {}, 'Merge, split, compress and convert PDFs with no sign-up and no watermarks. Your files are never uploaded.'),
+        h('ul', { class: 'facts' }, h('li', {}, 'No uploads'), h('li', {}, 'No sign-up'), h('li', {}, 'No watermarks'))
+      ),
+      GROUPS.map(function (g) {
+        return h('section', { class: 'group' },
+          h('h2', {}, g),
+          h('div', { class: 'cards' },
+            TOOLS.filter(function (t) { return t.group === g; }).map(function (t) {
+              return h('a', { class: 'card', href: '#' + t.id },
+                h('span', { class: 'tag' }, t.tag), h('h3', {}, t.name), h('p', {}, t.desc));
+            })));
+      })
+    );
+    app.replaceChildren(root);
+  }
+
+  function showPage(id) {
+    var titles = { privacy: 'Privacy Policy', terms: 'Terms of Use', contact: 'Contact' };
+    document.title = titles[id] + ' | ' + SITE.name;
+    var frag = document.getElementById('tpl-' + id).content.cloneNode(true);
+    frag.querySelectorAll('.js-email').forEach(function (s) { s.textContent = SITE.email; });
+    app.replaceChildren(frag);
+  }
+
+  function showTool(t) {
+    document.title = t.name + ' | ' + SITE.name;
+    var kind = KIND[t.kind];
+    var files = [];
+
+    var input = h('input', { type: 'file', hidden: true, accept: kind.accept, multiple: t.multiple, id: 'file-input' });
+    var drop = h('div', { class: 'drop', tabindex: '0', role: 'button', 'aria-label': 'Choose ' + kind.label + ' files' },
+      h('strong', {}, t.multiple ? 'Choose ' + kind.label + ' files' : 'Choose a ' + kind.label + ' file'),
+      h('span', {}, 'or drop ' + (t.multiple ? 'them' : 'it') + ' here'));
+    var list = h('ul', { class: 'files' });
+    var optBox = h('div', { class: 'opts' });
+    var runBtn = h('button', { class: 'btn', type: 'button', disabled: true }, t.name);
+    var progBox = h('div', { class: 'progress', hidden: true });
+    var fill = h('div', { class: 'fill' });
+    var progMsg = h('div', { class: 'msg', 'aria-live': 'polite' });
+    progBox.append(h('div', { class: 'track' }, fill), progMsg);
+    var msgBox = h('div', { 'aria-live': 'polite' });
+    var resBox = h('div', { class: 'results' });
+
+    t.options.forEach(function (o) {
+      var id = 'opt-' + o.id, ctl;
+      if (o.type === 'select') {
+        ctl = h('select', { id: id }, o.choices.map(function (ch) {
+          return h('option', { value: ch[0], selected: ch[0] === String(o.value) }, ch[1]);
+        }));
+      } else if (o.type === 'checkbox') {
+        ctl = h('input', { id: id, type: 'checkbox', checked: !!o.value });
+      } else {
+        ctl = h('input', { id: id, type: o.type, value: o.value, min: o.min, autocomplete: 'off' });
+      }
+      if (o.type === 'checkbox') optBox.append(h('div', { class: 'field check' }, ctl, h('label', { for: id }, o.label)));
+      else optBox.append(h('div', { class: 'field' }, h('label', { for: id }, o.label), ctl, o.hint ? h('span', { class: 'hint' }, o.hint) : null));
+    });
+
+    function collect() {
+      var v = {};
+      t.options.forEach(function (o) {
+        var e = document.getElementById('opt-' + o.id);
+        v[o.id] = o.type === 'checkbox' ? e.checked : e.value;
+      });
+      return v;
+    }
+    function setMsg(text, type) {
+      msgBox.replaceChildren();
+      if (text) msgBox.append(h('div', { class: 'notice ' + type, role: type === 'err' ? 'alert' : null }, text));
+    }
+    function renderFiles() {
+      list.replaceChildren();
+      files.forEach(function (f, i) {
+        list.append(h('li', { class: 'file' },
+          h('span', { class: 'n' }, t.ordered ? String(i + 1) : ''),
+          h('span', { class: 'name', title: f.name }, f.name),
+          h('span', { class: 'size' }, fmtSize(f.size)),
+          t.ordered && files.length > 1 ? h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Move up', disabled: i === 0, onclick: function () { move(i, -1); } }, '↑') : null,
+          t.ordered && files.length > 1 ? h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Move down', disabled: i === files.length - 1, onclick: function () { move(i, 1); } }, '↓') : null,
+          h('button', { class: 'icon-btn', type: 'button', 'aria-label': 'Remove ' + f.name, onclick: function () { files.splice(i, 1); changed(); } }, '×')));
+      });
+      runBtn.disabled = files.length < t.min;
+      optBox.hidden = !t.options.length;
+    }
+    function changed() { resBox.replaceChildren(); setMsg(''); renderFiles(); }
+    function move(i, d) { var x = files[i]; files[i] = files[i + d]; files[i + d] = x; changed(); }
+    function addFiles(fl) {
+      var all = Array.prototype.slice.call(fl), ok = all.filter(kind.test);
+      if (!ok.length) { setMsg('Please choose a ' + kind.label + ' file.', 'err'); return; }
+      files = t.multiple ? files.concat(ok) : [ok[0]];
+      changed();
+      if (ok.length < all.length) setMsg('Skipped ' + (all.length - ok.length) + ' file(s) that are not ' + kind.label + ' files.', 'info');
+    }
+
+    drop.addEventListener('click', function () { input.click(); });
+    drop.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
+    ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+    ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
+    drop.addEventListener('drop', function (e) { addFiles(e.dataTransfer.files); });
+    input.addEventListener('change', function () { addFiles(input.files); input.value = ''; });
+
+    async function progress(frac, text) {
+      fill.style.width = Math.round(frac * 100) + '%';
+      progMsg.textContent = text || '';
+      await tick();
+    }
+
+    function showOutputs(res) {
+      resBox.replaceChildren();
+      resBox.append(h('h2', {}, 'Done. Your file' + (res.outputs.length > 1 ? 's are' : ' is') + ' ready.'));
+      if (res.note) resBox.append(h('div', { class: 'notice info' }, res.note));
+      res.outputs.forEach(function (o) {
+        resBox.append(h('div', { class: 'out' },
+          h('span', { class: 'name' }, o.name),
+          h('span', { class: 'size' }, fmtSize(o.blob.size)),
+          h('button', { class: 'btn small', type: 'button', onclick: function () { download(o.blob, o.name); } }, 'Download')));
+      });
+      if (res.outputs.length > 1) {
+        resBox.append(h('button', {
+          class: 'btn ghost small', type: 'button',
+          onclick: async function (e) {
+            var b = e.currentTarget; b.disabled = true;
+            try {
+              need('jszip');
+              var z = new JSZip();
+              res.outputs.forEach(function (o) { z.file(o.name, o.blob); });
+              download(await z.generateAsync({ type: 'blob' }), t.id + '-files.zip');
+            } catch (err) { setMsg(err.message, 'err'); }
+            b.disabled = false;
+          }
+        }, 'Download all as ZIP'));
+      }
+    }
+
+    runBtn.addEventListener('click', async function () {
+      runBtn.disabled = true; setMsg(''); resBox.replaceChildren();
+      progBox.hidden = false; fill.style.width = '0%'; progMsg.textContent = 'Starting…';
+      try {
+        var res = await t.run({ files: files.slice(), opts: collect(), progress: progress });
+        await progress(1, 'Finished');
+        showOutputs(res);
+      } catch (e) {
+        setMsg(e && e.message ? e.message : 'Something went wrong. Please try again.', 'err');
+      } finally {
+        progBox.hidden = true;
+        runBtn.disabled = files.length < t.min;
+      }
+    });
+
+    var minNote = t.min > 1 ? ' Add at least ' + t.min + ' files.' : '';
+    app.replaceChildren(h('section', { class: 'tool' },
+      h('a', { class: 'back', href: '#' }, '← All tools'),
+      h('h1', {}, t.name),
+      h('p', { class: 'lead' }, t.desc + minNote),
+      h('div', { class: 'panel' }, input, drop, list, optBox, runBtn, progBox, msgBox, resBox,
+        h('p', { class: 'fine' }, 'Your files are processed on this device and are not uploaded.'))));
+    renderFiles();
+  }
+
+  function route() {
+    var id = decodeURIComponent(location.hash.replace(/^#/, ''));
+    var tool = TOOLS.filter(function (t) { return t.id === id; })[0];
+    if (tool) showTool(tool);
+    else if (id === 'privacy' || id === 'terms' || id === 'contact') showPage(id);
+    else showHome();
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', route);
+  route();
+})();
+</script>
+</body>
+</html>
